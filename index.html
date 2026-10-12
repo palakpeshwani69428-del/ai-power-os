@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Power OS</title>
+<style>
+  :root{
+    --bg:#04060c;
+    --bg2:#070b14;
+    --panel:#0a0f18;
+    --panel2:#0e1522;
+    --panel3:#121b2b;
+    --line:rgba(80,200,255,.14);
+    --line2:rgba(80,200,255,.28);
+    --accent:#22d3ee;
+    --accent2:#5eead4;
+    --amber:#ffb020;
+    --pink:#ff5c8a;
+    --text:#c9dbe8;
+    --dim:#6b8299;
+    --dim2:#41566b;
+    --glow:0 0 22px rgba(34,211,238,.28);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .hidden{display:none !important}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:rgba(34,211,238,.22);border-radius:6px}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(34,211,238,.4)}
+
+  /* ============ BOOT SCREEN ============ */
+  #boot{
+    position:fixed;inset:0;z-index:1000;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 42%,#0a1626 0%,#04060c 62%);
+    transition:opacity .7s ease, visibility .7s;
+  }
+  #boot::before{
+    content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(34,211,238,.05) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(34,211,238,.05) 1px,transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(circle at 50% 45%,#000 0%,transparent 72%);
+    -webkit-mask-image:radial-gradient(circle at 50% 45%,#000 0%,transparent 72%);
+    animation:gridpan 22s linear infinite;
+  }
+  @keyframes gridpan{to{background-position:44px 44px,44px 44px}}
+  #boot.fade{opacity:0;visibility:hidden}
+  .boot-inner{position:relative;z-index:2;width:min(560px,90vw);text-align:center}
+  .core{
+    width:118px;height:118px;margin:0 auto 26px;position:relative;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .core svg{width:100%;height:100%;filter:drop-shadow(0 0 14px rgba(34,211,238,.6))}
+  .core .ring{transform-origin:60px 60px;animation:spin 9s linear infinite}
+  .core .ring2{transform-origin:60px 60px;animation:spin 6s linear infinite reverse}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .boot-title{
+    font-family:var(--mono);font-size:30px;letter-spacing:.42em;font-weight:600;
+    color:#eafcff;text-shadow:0 0 18px rgba(34,211,238,.7);margin-left:.42em;
+  }
+  .boot-sub{
+    font-family:var(--mono);font-size:11px;letter-spacing:.34em;color:var(--accent);
+    margin-top:10px;opacity:.85;text-transform:uppercase;
+  }
+  .greet{
+    margin:30px auto 0;min-height:52px;max-width:460px;
+    font-size:14.5px;line-height:1.6;color:#a9c6d8;
+  }
+  .greet .cursor{display:inline-block;width:8px;height:16px;background:var(--accent);
+    vertical-align:-2px;margin-left:2px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .boot-bar{
+    margin:26px auto 0;width:min(420px,80vw);height:4px;border-radius:4px;
+    background:rgba(34,211,238,.12);overflow:hidden;position:relative;
+  }
+  .boot-bar i{
+    position:absolute;inset:0;width:0%;border-radius:4px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    box-shadow:0 0 14px rgba(34,211,238,.8);transition:width .3s ease;
+  }
+  .boot-log{
+    margin:20px auto 0;width:min(420px,80vw);height:96px;overflow:hidden;
+    font-family:var(--mono);font-size:11px;color:var(--dim);text-align:left;line-height:1.75;
+  }
+  .boot-log div{opacity:0;animation:logIn .35s forwards}
+  .boot-log .ok{color:var(--accent2)}
+  @keyframes logIn{to{opacity:1}}
+  #enterBtn{
+    margin-top:30px;padding:13px 40px;font-family:var(--mono);font-size:12.5px;
+    letter-spacing:.28em;text-transform:uppercase;color:#04121a;cursor:pointer;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;border-radius:3px;
+    box-shadow:0 0 26px rgba(34,211,238,.5);opacity:0;pointer-events:none;
+    transition:opacity .5s,transform .2s,box-shadow .2s;
+  }
+  #enterBtn.show{opacity:1;pointer-events:auto}
+  #enterBtn:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(34,211,238,.85)}
+
+  /* ============ DESKTOP ============ */
+  #desktop{position:fixed;inset:0;display:flex;flex-direction:column;
+    background:
+      radial-gradient(1100px 620px at 78% -8%,rgba(34,211,238,.10),transparent 60%),
+      radial-gradient(900px 560px at 8% 108%,rgba(94,234,212,.07),transparent 60%),
+      linear-gradient(180deg,#05080f,#04060c);
+  }
+  #desktop::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(80,200,255,.045) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(80,200,255,.045) 1px,transparent 1px);
+    background-size:52px 52px;
+    mask-image:radial-gradient(circle at 50% 40%,#000 0%,transparent 85%);
+    -webkit-mask-image:radial-gradient(circle at 50% 40%,#000 0%,transparent 85%);
+  }
+
+  /* top bar */
+  #topbar{
+    position:relative;z-index:60;height:44px;flex:0 0 44px;
+    display:flex;align-items:center;gap:18px;padding:0 16px;
+    background:rgba(8,13,22,.82);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--mono);
+    font-size:12px;letter-spacing:.2em;color:#dff6ff;text-transform:uppercase}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 12px var(--accent);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
+  .tb-spacer{flex:1}
+  .tb-stat{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;
+    color:var(--dim);letter-spacing:.06em}
+  .tb-stat b{color:var(--accent2);font-weight:600}
+  .tb-stat .bar{width:52px;height:5px;border-radius:3px;background:rgba(34,211,238,.14);overflow:hidden}
+  .tb-stat .bar i{display:block;height:100%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  #clock{font-family:var(--mono);font-size:12.5px;color:#dff6ff;letter-spacing:.08em}
+
+  /* command bar */
+  #cmdwrap{position:relative;z-index:55;display:flex;justify-content:center;padding:14px 16px 0}
+  #cmdbar{
+    width:min(720px,94vw);display:flex;align-items:center;gap:11px;
+    background:rgba(10,16,26,.9);border:1px solid var(--line2);border-radius:8px;
+    padding:11px 15px;box-shadow:0 8px 34px rgba(0,0,0,.5),inset 0 0 22px rgba(34,211,238,.05);
+    transition:border-color .2s,box-shadow .2s;
+  }
+  #cmdbar:focus-within{border-color:var(--accent);box-shadow:0 0 0 1px rgba(34,211,238,.35),0 8px 40px rgba(34,211,238,.18)}
+  #cmdbar .prompt{font-family:var(--mono);color:var(--accent);font-size:14px;text-shadow:0 0 10px var(--accent)}
+  #cmdInput{
+    flex:1;background:transparent;border:none;outline:none;color:#eafcff;
+    font-family:var(--mono);font-size:13.5px;letter-spacing:.02em;
+  }
+  #cmdInput::placeholder{color:var(--dim2)}
+  #cmdbar .hint{font-family:var(--mono);font-size:10px;color:var(--dim2);letter-spacing:.1em;
+    border:1px solid var(--line);border-radius:4px;padding:3px 7px;white-space:nowrap}
+
+  /* desktop icons */
+  #icons{
+    position:relative;z-index:20;flex:1;padding:22px 20px;
+    display:grid;grid-template-columns:repeat(auto-fill,96px);grid-auto-rows:104px;
+    gap:6px;align-content:start;justify-content:start;
+  }
+  .dicon{
+    display:flex;flex-direction:column;align-items:center;gap:9px;padding:12px 6px;
+    border-radius:9px;cursor:pointer;border:1px solid transparent;transition:.18s;
+    user-select:none;
+  }
+  .dicon:hover{background:rgba(34,211,238,.07);border-color:var(--line2);transform:translateY(-2px)}
+  .dicon .glyph{
+    width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,var(--panel3),var(--panel));
+    border:1px solid var(--line2);box-shadow:inset 0 0 18px rgba(34,211,238,.08);
+  }
+  .dicon .glyph svg{width:26px;height:26px;stroke:var(--accent);fill:none;stroke-width:1.7;
+    filter:drop-shadow(0 0 6px rgba(34,211,238,.55))}
+  .dicon span{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:.05em;text-align:center}
+
+  /* dock */
+  #dock{
+    position:relative;z-index:60;flex:0 0 auto;display:flex;justify-content:center;
+    padding:0 16px 16px;
+  }
+  .dock-inner{
+    display:flex;align-items:flex-end;gap:10px;padding:10px 14px;
+    background:rgba(9,14,23,.86);backdrop-filter:blur(14px);
+    border:1px solid var(--line2);border-radius:16px;
+    box-shadow:0 12px 40px rgba(0,0,0,.55),inset 0 0 26px rgba(34,211,238,.05);
+  }
+  .dock-app{
+    position:relative;width:52px;height:52px;border-radius:13px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,var(--panel3),var(--panel));
+    border:1px solid var(--line);transition:transform .18s,box-shadow .18s,border-color .18s;
+  }
+  .dock-app svg{width:25px;height:25px;stroke:var(--accent);fill:none;stroke-width:1.7;
+    filter:drop-shadow(0 0 6px rgba(34,211,238,.5))}
+  .dock-app:hover{transform:translateY(-9px) scale(1.06);border-color:var(--accent);
+    box-shadow:0 0 22px rgba(34,211,238,.4)}
+  .dock-app .tip{
+    position:absolute;bottom:64px;left:50%;transform:translateX(-50%) translateY(6px);
+    background:var(--panel3);border:1px solid var(--line2);color:#dff6ff;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;padding:5px 10px;border-radius:5px;
+    white-space:nowrap;opacity:0;pointer-events:none;transition:.18s;
+  }
+  .dock-app:hover .tip{opacity:1;transform:translateX(-50%) translateY(0)}
+  .dock-app .run{position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
+    width:5px;height:5px;border-radius:50%;background:var(--accent2);box-shadow:0 0 8px var(--accent2);
+    opacity:0;transition:.2s}
+  .dock-app.active .run{opacity:1}
+  .dock-sep{width:1px;height:38px;background:var(--line2);margin:0 3px;align-self:center}
+
+  /* ============ WINDOWS ============ */
+  #windows{position:absolute;inset:0;z-index:40;pointer-events:none}
+  .win{
+    position:absolute;pointer-events:auto;display:flex;flex-direction:column;
+    width:520px;height:400px;min-width:320px;min-height:220px;
+    background:linear-gradient(180deg,rgba(12,18,29,.97),rgba(8,12,20,.98));
+    border:1px solid var(--line2);border-radius:11px;overflow:hidden;
+    box-shadow:0 24px 70px rgba(0,0,0,.7),0 0 0 1px rgba(34,211,238,.06),inset 0 0 40px rgba(34,211,238,.03);
+    animation:winIn .26s cubic-bezier(.2,.9,.3,1.2);
+  }
+  @keyframes winIn{from{opacity:0;transform:scale(.94) translateY(14px)}to{opacity:1;transform:none}}
+  .win.focused{border-color:var(--accent);box-shadow:0 26px 80px rgba(0,0,0,.75),0 0 0 1px rgba(34,211,238,.4),0 0 34px rgba(34,211,238,.16)}
+  .win.min{display:none}
+  .win-head{
+    flex:0 0 40px;display:flex;align-items:center;gap:10px;padding:0 12px;cursor:grab;
+    background:rgba(16,24,38,.9);border-bottom:1px solid var(--line);user-select:none;
+  }
+  .win-head:active{cursor:grabbing}
+  .win-head .wi{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:1.8;
+    filter:drop-shadow(0 0 5px rgba(34,211,238,.5))}
+  .win-head .wt{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;color:#dff6ff;text-transform:uppercase}
+  .win-head .sp{flex:1}
+  .wbtn{width:22px;height:22px;border-radius:5px;border:1px solid var(--line);background:transparent;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .wbtn svg{width:11px;height:11px;stroke:var(--dim);stroke-width:2;fill:none}
+  .wbtn:hover{border-color:var(--accent);background:rgba(34,211,238,.1)}
+  .wbtn:hover svg{stroke:var(--accent)}
+  .wbtn.close:hover{border-color:var(--pink);background:rgba(255,92,138,.12)}
+  .wbtn.close:hover svg{stroke:var(--pink)}
+  .win-body{flex:1;overflow:auto;position:relative}
+
+  /* chat app */
+  .chat-wrap{display:flex;flex-direction:column;height:100%}
+  .chat-log{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:13px}
+  .msg{display:flex;gap:10px;max-width:88%;animation:msgIn .3s ease}
+  @keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .msg .av{flex:0 0 30px;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:11px;font-weight:700}
+  .msg.ai .av{background:linear-gradient(160deg,rgba(34,211,238,.25),rgba(34,211,238,.06));
+    border:1px solid var(--line2);color:var(--accent);box-shadow:0 0 12px rgba(34,211,238,.25)}
+  .msg.me{align-self:flex-end;flex-direction:row-reverse}
+  .msg.me .av{background:linear-gradient(160deg,rgba(94,234,212,.22),rgba(94,234,212,.05));
+    border:1px solid rgba(94,234,212,.3);color:var(--accent2)}
+  .bubble{padding:10px 13px;border-radius:10px;font-size:13.5px;line-height:1.6;color:#cfe3ee}
+  .msg.ai .bubble{background:rgba(20,30,46,.75);border:1px solid var(--line)}
+  .msg.me .bubble{background:rgba(34,211,238,.12);border:1px solid var(--line2)}
+  .chat-in{flex:0 0 auto;display:flex;gap:9px;padding:12px;border-top:1px solid var(--line);background:rgba(10,15,24,.7)}
+  .chat-in input{flex:1;background:rgba(6,10,17,.9);border:1px solid var(--line);border-radius:7px;
+    padding:10px 12px;color:#eafcff;font-family:var(--sans);font-size:13px;outline:none;transition:.18s}
+  .chat-in input:focus{border-color:var(--accent);box-shadow:0 0 0 1px rgba(34,211,238,.3)}
+  .btn{background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;border-radius:7px;
+    color:#04121a;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    padding:0 16px;cursor:pointer;font-weight:700;transition:.18s}
+  .btn:hover{box-shadow:0 0 20px rgba(34,211,238,.5);transform:translateY(-1px)}
+  .btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--accent)}
+  .btn.ghost:hover{background:rgba(34,211,238,.1);box-shadow:none}
+
+  /* monitor app */
+  .mon{padding:18px;display:flex;flex-direction:column;gap:18px}
+  .gauges{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .gauge{background:rgba(14,21,34,.7);border:1px solid var(--line);border-radius:10px;
+    padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .gauge svg{width:96px;height:96px;transform:rotate(-90deg)}
+  .gauge .track{fill:none;stroke:rgba(34,211,238,.12);stroke-width:8}
+  .gauge .val{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .6s ease,stroke .4s}
+  .gauge .num{font-family:var(--mono);font-size:19px;font-weight:700;color:#eafcff;margin-top:-58px}
+  .gauge .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;margin-top:34px}
+  .spark{background:rgba(14,21,34,.7);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .spark h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--dim);
+    text-transform:uppercase;margin-bottom:10px;font-weight:600}
+  .spark canvas{width:100%;height:110px;display:block}
+  .stat-rows{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .srow{background:rgba(14,21,34,.7);border:1px solid var(--line);border-radius:9px;padding:11px 13px;
+    display:flex;justify-content:space-between;align-items:center}
+  .srow .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+  .srow .v{font-family:var(--mono);font-size:13px;color:var(--accent2);font-weight:600}
+
+  /* notes app */
+  .notes{display:flex;height:100%}
+  .notes-list{flex:0 0 190px;border-right:1px solid var(--line);overflow:auto;background:rgba(8,12,20,.5)}
+  .note-item{padding:12px 13px;border-bottom:1px solid var(--line);cursor:pointer;transition:.15s}
+  .note-item:hover{background:rgba(34,211,238,.06)}
+  .note-item.sel{background:rgba(34,211,238,.1);border-left:2px solid var(--accent)}
+  .note-item .nt{font-size:12.5px;color:#dff6ff;font-weight:600;margin-bottom:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .note-item .nd{font-family:var(--mono);font-size:9.5px;color:var(--dim2)}
+  .notes-edit{flex:1;display:flex;flex-direction:column}
+  .notes-edit input,.notes-edit textarea{background:transparent;border:none;outline:none;color:#eafcff;
+    font-family:var(--sans);width:100%}
+  .notes-edit input{font-size:15px;font-weight:600;padding:14px 16px 8px;border-bottom:1px solid var(--line)}
+  .notes-edit textarea{flex:1;resize:none;padding:14px 16px;font-size:13.5px;line-height:1.7;color:#cfe3ee}
+  .notes-tools{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:rgba(10,15,24,.6)}
+  .notes-tools .btn{padding:8px 14px}
+
+  /* tasks app */
+  .tasks{padding:16px;display:flex;flex-direction:column;gap:16px}
+  .task-add{display:flex;gap:9px}
+  .task-add input{flex:1;background:rgba(6,10,17,.9);border:1px solid var(--line);border-radius:7px;
+    padding:10px 12px;color:#eafcff;font-size:13px;outline:none;font-family:var(--sans)}
+  .task-add input:focus{border-color:var(--accent)}
+  .task-add .btn{padding:0 16px}
+  .tlist{display:flex;flex-direction:column;gap:8px}
+  .task{display:flex;align-items:center;gap:11px;background:rgba(14,21,34,.7);border:1px solid var(--line);
+    border-radius:9px;padding:11px 13px;transition:.15s}
+  .task:hover{border-color:var(--line2)}
+  .task .chk{width:19px;height:19px;border-radius:5px;border:1.5px solid var(--line2);cursor:pointer;
+    flex:0 0 19px;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .task .chk svg{width:11px;height:11px;stroke:#04121a;stroke-width:3;fill:none;opacity:0}
+  .task.done .chk{background:var(--accent2);border-color:var(--accent2);box-shadow:0 0 12px rgba(94,234,212,.5)}
+  .task.done .chk svg{opacity:1}
+  .task .tt{flex:1;font-size:13.5px;color:#dff6ff}
+  .task.done .tt{text-decoration:line-through;color:var(--dim2)}
+  .task .del{background:transparent;border:none;cursor:pointer;color:var(--dim2);font-size:16px;line-height:1;
+    padding:2px 5px;border-radius:4px;transition:.15s}
+  .task .del:hover{color:var(--pink);background:rgba(255,92,138,.1)}
+  .agents h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--dim);
+    text-transform:uppercase;margin-bottom:10px;font-weight:600}
+  .agent{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid var(--line);
+    border-radius:9px;background:rgba(14,21,34,.6);margin-bottom:8px}
+  .agent .ad{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .agent .ad.on{background:var(--accent2);box-shadow:0 0 10px var(--accent2);animation:pulse 2s infinite}
+  .agent .ad.idle{background:var(--amber);box-shadow:0 0 10px var(--amber)}
+  .agent .an{flex:1;font-size:13px;color:#dff6ff}
+  .agent .as{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+
+  /* toast */
+  #toasts{position:fixed;top:58px;right:18px;z-index:900;display:flex;flex-direction:column;gap:9px;pointer-events:none}
+  .toast{background:rgba(12,19,30,.96);border:1px solid var(--line2);border-left:3px solid var(--accent);
+    border-radius:8px;padding:11px 15px;min-width:230px;max-width:330px;
+    box-shadow:0 12px 34px rgba(0,0,0,.6),0 0 20px rgba(34,211,238,.12);
+    animation:toastIn .3s ease;font-size:12.5px;color:#dff6ff}
+  .toast .th{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--accent);
+    text-transform:uppercase;margin-bottom:4px}
+  @keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+  .toast.out{animation:toastOut .3s forwards}
+  @keyframes toastOut{to{opacity:0;transform:translateX(30px)}}
+
+  @media(max-width:640px){
+    .gauges{grid-template-columns:1fr}
+    .stat-rows{grid-template-columns:1fr}
+    .win{width:94vw !important;left:3vw !important}
+    .tb-stat.hide-sm{display:none}
+    #icons{grid-template-columns:repeat(auto-fill,84px)}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= BOOT ================= -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="core">
+      <svg viewBox="0 0 120 120">
+        <polygon class="ring" points="60,8 105,34 105,86 60,112 15,86 15,34" fill="none" stroke="rgba(34,211,238,.35)" stroke-width="1.5" stroke-dasharray="6 10"/>
+        <polygon class="ring2" points="60,20 95,40 95,80 60,100 25,80 25,40" fill="none" stroke="rgba(94,234,212,.5)" stroke-width="1.5" stroke-dasharray="3 7"/>
+        <circle cx="60" cy="60" r="17" fill="none" stroke="#22d3ee" stroke-width="2"/>
+        <circle cx="60" cy="60" r="6" fill="#22d3ee"/>
+      </svg>
+    </div>
+    <div class="boot-title">AI POWER OS</div>
+    <div class="boot-sub">Neural Operating Environment v3.1</div>
+    <div class="greet" id="greet"></div>
+    <div class="boot-bar"><i id="bootFill"></i></div>
+    <div class="boot-log" id="bootLog"></div>
+    <button id="enterBtn">Enter System</button>
+  </div>
+</div>
+
+<!-- ================= DESKTOP ================= -->
+<div id="desktop" class="hidden">
+  <div id="topbar">
+    <div class="brand"><span class="dot"></span>AI POWER OS</div>
+    <div class="tb-spacer"></div>
+    <div class="tb-stat hide-sm">NEURAL <span class="bar"><i id="tbNeural" style="width:42%"></i></span> <b id="tbNeuralV">42%</b></div>
+    <div class="tb-stat hide-sm">MEM <span class="bar"><i id="tbMem" style="width:58%"></i></span> <b id="tbMemV">58%</b></div>
+    <div class="tb-stat">LINK <b>STABLE</b></div>
+    <div id="clock">--:--:--</div>
+  </div>
+
+  <div id="cmdwrap">
+    <div id="cmdbar">
+      <span class="prompt">&gt;_</span>
+      <input id="cmdInput" type="text" autocomplete="off" spellcheck="false"
+        placeholder="Type a command…  e.g.  open monitor  ·  note: buy GPU  ·  help">
+      <span class="hint">ENTER</span>
+    </div>
+  </div>
+
+  <div id="icons"></div>
+
+  <div id="windows"></div>
+
+  <div id="dock"><div class="dock-inner" id="dockInner"></div></div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- icon library ---------- */
+  var ICONS = {
+    chat:'<svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.8L3 21l1.9-4.6A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg>',
+    monitor:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M6 12l3-3 2.5 2.5L15 8l3 3"/></svg>',
+    notes:'<svg viewBox="0 0 24 24"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M8 13h8M8 17h5"/></svg>',
+    tasks:'<svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17"/></svg>',
+    power:'<svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.5 6.5a8 8 0 1 0 11 0"/></svg>'
+  };
+
+  /* ---------- app registry ---------- */
+  var APPS = {
+    chat:    {name:"AI Assistant", icon:ICONS.chat,    w:560, h:440},
+    monitor: {name:"System Monitor", icon:ICONS.monitor, w:520, h:470},
+    notes:   {name:"Notes", icon:ICONS.notes,   w:600, h:420},
+    tasks:   {name:"Agents & Tasks", icon:ICONS.tasks, w:520, h:460}
+  };
+
+  var openWins = {};   // id -> {el, min}
+  var zTop = 50;
+
+  /* ---------- helpers ---------- */
+  function $(s,r){return (r||document).querySelector(s);}
+  function el(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+  function toast(title,msg){
+    var t=el("div","toast",'<div class="th">'+esc(title)+'</div>'+esc(msg));
+    $("#toasts").appendChild(t);
+    setTimeout(function(){t.classList.add("out");setTimeout(function(){t.remove();},320);},3200);
+  }
+
+  /* ================= BOOT SEQUENCE ================= */
+  var GREETING = "Hello. I'm ARIA, your neural co-pilot. Powering up the core, calibrating the neural mesh, and bringing your workspace online. Let's build something remarkable.";
+  var LOGS = [
+    ["Initializing neural core", "OK"],
+    ["Mounting quantum memory banks", "OK"],
+    ["Calibrating inference mesh", "OK"],
+    ["Linking agent swarm", "OK"],
+    ["Loading user workspace", "OK"],
+    ["AI Power OS ready", "READY"]
+  ];
+
+  function typeGreeting(){
+    var g=$("#greet"), i=0;
+    var cur=el("span","cursor");
+    g.appendChild(cur);
+    (function step(){
+      if(i<GREETING.length){
+        cur.insertAdjacentText("beforebegin",GREETING.charAt(i));
+        i++;
+        setTimeout(step, 18 + Math.random()*22);
+      } else {
+        setTimeout(function(){cur.remove();},900);
+      }
+    })();
+  }
+
+  function runBoot(){
+    typeGreeting();
+    var fill=$("#bootFill"), log=$("#bootLog"), p=0, li=0;
+    var iv=setInterval(function(){
+      p=Math.min(100,p+Math.random()*13+5);
+      fill.style.width=p+"%";
+      if(li<LOGS.length && p> (li+1)*(100/LOGS.length)-8){
+        var d=el("div",null,'<span class="ok">[ OK ]</span> '+esc(LOGS[li][0]));
+        log.appendChild(d);
+        li++;
+      }
+      if(p>=100){
+        clearInterval(iv);
+        fill.style.width="100%";
+        setTimeout(function(){$("#enterBtn").classList.add("show");},350);
+      }
+    },260);
+  }
+
+  $("#enterBtn").addEventListener("click",function(){
+    $("#boot").classList.add("fade");
+    setTimeout(function(){
+      $("#boot").classList.add("hidden");
+      $("#desktop").classList.remove("hidden");
+      startDesktop();
+    },700);
+  });
+
+  /* ================= DESKTOP ================= */
+  function startDesktop(){
+    buildIcons();
+    buildDock();
+    startClock();
+    startTelemetry();
+    setTimeout(function(){
+      openApp("chat");
+      toast("System Online","ARIA is ready. Try the command bar.");
+    },420);
+  }
+
+  function buildIcons(){
+    var wrap=$("#icons");
+    Object.keys(APPS).forEach(function(id){
+      var a=APPS[id];
+      var d=el("div","dicon",'<div class="glyph">'+a.icon+'</div><span>'+esc(a.name)+'</span>');
+      d.addEventListener("dblclick",function(){openApp(id);});
+      d.addEventListener("click",function(){openApp(id);});
+      wrap.appendChild(d);
+    });
+  }
+
+  function buildDock(){
+    var inner=$("#dockInner");
+    Object.keys(APPS).forEach(function(id){
+      var a=APPS[id];
+      var d=el("div","dock-app",a.icon+'<span class="tip">'+esc(a.name)+'</span><span class="run"></span>');
+      d.dataset.app=id;
+      d.addEventListener("click",function(){openApp(id);});
+      inner.appendChild(d);
+    });
+    inner.appendChild(el("div","dock-sep"));
+    var p=el("div","dock-app",ICONS.power+'<span class="tip">Reboot</span>');
+    p.addEventListener("click",function(){location.reload();});
+    inner.appendChild(p);
+  }
+
+  function startClock(){
+    function tick(){
+      var d=new Date();
+      var hh=String(d.getHours()).padStart(2,"0");
+      var mm=String(d.getMinutes()).padStart(2,"0");
+      var ss=String(d.getSeconds()).padStart(2,"0");
+      $("#clock").textContent=hh+":"+mm+":"+ss;
+    }
+    tick(); setInterval(tick,1000);
+  }
+
+  /* ================= WINDOW MANAGER ================= */
+  function focusWin(id){
+    Object.keys(openWins).forEach(function(k){
+      openWins[k].el.classList.remove("focused");
+    });
+    if(openWins[id]) openWins[id].el.classList.add("focused");
+    zTop++; if(openWins[id]) openWins[id].el.style.zIndex=zTop;
+    updateDock();
+  }
+
+  function updateDock(){
+    document.querySelectorAll(".dock-app[data-app]").forEach(function(d){
+      d.classList.toggle("active", !!openWins[d.dataset.app]);
+    });
+  }
+
+  function openApp(id){
+    if(!APPS[id]) return;
+    if(openWins[id]){
+      openWins[id].el.classList.remove("min");
+      focusWin(id);
+      return;
+    }
+    var a=APPS[id];
+    var w=el("div","win");
+    var vw=window.innerWidth, vh=window.innerHeight;
+    var width=Math.min(a.w, vw-40), height=Math.min(a.h, vh-140);
+    var count=Object.keys(openWins).length;
+    var left=Math.max(20, Math.min(vw-width-20, 90 + count*34));
+    var top=Math.max(60, Math.min(vh-height-90, 96 + count*28));
+    w.style.width=width+"px"; w.style.height=height+"px";
+    w.style.left=left+"px"; w.style.top=top+"px";
+
+    var head=el("div","win-head",
+      '<span class="wi">'+a.icon+'</span><span class="wt">'+esc(a.name)+'</span><span class="sp"></span>'+
+      '<button class="wbtn min" title="Minimize"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>'+
+      '<button class="wbtn close" title="Close"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6"/></svg></button>');
+    var body=el("div","win-body");
+    w.appendChild(head); w.appendChild(body);
+
+    head.querySelector(".min").addEventListener("click",function(e){e.stopPropagation();w.classList.add("min");updateDock();});
+    head.querySelector(".close").addEventListener("click",function(e){e.stopPropagation();closeApp(id);});
+    w.addEventListener("mousedown",function(){focusWin(id);});
+
+    // drag
+    (function(){
+      var dragging=false, sx=0, sy=0, ox=0, oy=0;
+      head.addEventListener("mousedown",function(e){
+        if(e.target.closest(".wbtn")) return;
+        dragging=true; sx=e.clientX; sy=e.clientY;
+        ox=parseInt(w.style.left,10); oy=parseInt(w.style.top,10);
+        document.body.style.userSelect="none";
+      });
+      document.addEventListener("mousemove",function(e){
+        if(!dragging) return;
+        var nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+        nx=Math.max(-width+120, Math.min(window.innerWidth-120, nx));
+        ny=Math.max(44, Math.min(window.innerHeight-60, ny));
+        w.style.left=nx+"px"; w.style.top=ny+"px";
+      });
+      document.addEventListener("mouseup",function(){
+        if(dragging){dragging=false;document.body.style.userSelect="";}
+      });
+    })();
+
+    $("#windows").appendChild(w);
+    openWins[id]={el:w, min:false};
+
+    // render app content
+    if(id==="chat") renderChat(body);
+    if(id==="monitor") renderMonitor(body);
+    if(id==="notes") renderNotes(body);
+    if(id==="tasks") renderTasks(body);
+
+    focusWin(id);
+    updateDock();
+  }
+
+  function closeApp(id){
+    if(openWins[id]){ openWins[id].el.remove(); delete openWins[id]; }
+    updateDock();
+  }
+
+  function closeAll(){
+    Object.keys(openWins).forEach(function(k){ openWins[k].el.remove(); delete openWins[k]; });
+    updateDock();
+  }
+
+  /* ================= APP: CHAT ================= */
+  var chatHistory=[];
+  function renderChat(body){
+    body.innerHTML='<div class="chat-wrap"><div class="chat-log" id="chatLog"></div>'+
+      '<div class="chat-in"><input id="chatInput" placeholder="Ask ARIA anything…" autocomplete="off">'+
+      '<button class="btn" id="chatSend">Send</button></div></div>';
+    var log=$("#chatLog",body);
+    function addMsg(who,text){
+      var m=el("div","msg "+(who==="me"?"me":"ai"),
+        '<div class="av">'+(who==="me"?"YOU":"AI")+'</div><div class="bubble">'+esc(text)+'</div>');
+      log.appendChild(m); log.scrollTop=log.scrollHeight;
+    }
+    chatHistory.forEach(function(m){addMsg(m.who,m.text);});
+    if(chatHistory.length===0){
+      addMsg("ai","Systems nominal. I can open apps, take notes, queue tasks, and run diagnostics. Try: \"open monitor\" or \"note: idea for the demo\".");
+    }
+    function send(){
+      var inp=$("#chatInput",body);
+      var v=inp.value.trim(); if(!v) return;
+      inp.value="";
+      chatHistory.push({who:"me",text:v}); addMsg("me",v);
+      setTimeout(function(){
+        var r=aiReply(v);
+        chatHistory.push({who:"ai",text:r}); addMsg("ai",r);
+      },420);
+    }
+    $("#chatSend",body).addEventListener("click",send);
+    $("#chatInput",body).addEventListener("keydown",function(e){if(e.key==="Enter")send();});
+    setTimeout(function(){var i=$("#chatInput",body); if(i) i.focus();},80);
+  }
+
+  function aiReply(q){
+    var s=q.toLowerCase();
+    if(/hello|hi|hey|greet/.test(s)) return "Hey there. All cores are green and the neural mesh is warm. What are we building today?";
+    if(/status|health|diagnostic|system/.test(s)) return "Diagnostics: CPU 34%, memory 58%, neural load 42%. No anomalies detected. Latency 12ms across the agent swarm.";
+    if(/note/.test(s)) return "I can capture that. Type it in the command bar as \"note: your text\" and I'll file it in Notes instantly.";
+    if(/task|todo|agent/.test(s)) return "Task queue is live. Use \"task: your item\" in the command bar, or open Agents & Tasks to manage the swarm.";
+    if(/open|launch|show/.test(s)) return "I can open any module — try \"open monitor\", \"open notes\", \"open tasks\", or \"open chat\".";
+    if(/who are you|your name|what are you/.test(s)) return "I'm ARIA — the reasoning layer of AI Power OS. I orchestrate your apps, agents, and data from one command surface.";
+    if(/help|command/.test(s)) return "Commands: open <app> · close all · note: <text> · task: <text> · status · clear · help. Anything else, just talk to me.";
+    if(/thank/.test(s)) return "Anytime. I'll keep the systems humming in the background.";
+    return "Understood. I've logged that to the session context. Want me to open a module, capture a note, or queue a task for it?";
+  }
+
+  /* ================= APP: MONITOR ================= */
+  var telemetry={cpu:34,mem:58,neural:42};
+  var sparkData=[];
+  function gaugeSVG(id,color){
+    var r=40, c=2*Math.PI*r;
+    return '<svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="'+r+'"/>'+
+      '<circle class="val" id="'+id+'" cx="50" cy="50" r="'+r+'" stroke="'+color+'" '+
+      'stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+c.toFixed(1)+'"/></svg>';
+  }
+  function renderMonitor(body){
+    body.innerHTML='<div class="mon">'+
+      '<div class="gauges">'+
+        '<div class="gauge">'+gaugeSVG("gCpu","#22d3ee")+'<div class="num" id="nCpu">0%</div><div class="lbl">CPU</div></div>'+
+        '<div class="gauge">'+gaugeSVG("gMem","#5eead4")+'<div class="num" id="nMem">0%</div><div class="lbl">Memory</div></div>'+
+        '<div class="gauge">'+gaugeSVG("gNeu","#ffb020")+'<div class="num" id="nNeu">0%</div><div class="lbl">Neural Load</div></div>'+
+      '</div>'+
+      '<div class="spark"><h4>Throughput · last 40 ticks</h4><canvas id="sparkCv"></canvas></div>'+
+      '<div class="stat-rows">'+
+        '<div class="srow"><span class="k">Uptime</span><span class="v" id="sUp">00:00</span></div>'+
+        '<div class="srow"><span class="k">Latency</span><span class="v" id="sLat">12ms</span></div>'+
+        '<div class="srow"><span class="k">Agents</span><span class="v">4 active</span></div>'+
+        '<div class="srow"><span class="k">Core Temp</span><span class="v" id="sTemp">41°C</span></div>'+
+      '</div></div>';
+    drawSpark();
+  }
+  function setGauge(id,numId,val,color){
+    var g=document.getElementById(id); if(!g) return;
+    var r=40, c=2*Math.PI*r;
+    g.style.strokeDashoffset=(c*(1-val/100)).toFixed(1);
+    var n=document.getElementById(numId); if(n) n.textContent=Math.round(val)+"%";
+  }
+  function drawSpark(){
+    var cv=document.getElementById("sparkCv"); if(!cv) return;
+    var dpr=window.devicePixelRatio||1;
+    var w=cv.clientWidth, h=cv.clientHeight;
+    cv.width=w*dpr; cv.height=h*dpr;
+    var ctx=cv.getContext("2d"); ctx.scale(dpr,dpr);
+    ctx.clearRect(0,0,w,h);
+    if(sparkData.length<2) return;
+    var max=100, step=w/(sparkData.length-1);
+    // grid
+    ctx.strokeStyle="rgba(34,211,238,.08)"; ctx.lineWidth=1;
+    for(var gy=0;gy<=4;gy++){var yy=h*gy/4;ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(w,yy);ctx.stroke();}
+    // area
+    var grad=ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,"rgba(34,211,238,.35)");
+    grad.addColorStop(1,"rgba(34,211,238,0)");
+    ctx.beginPath(); ctx.moveTo(0,h);
+    sparkData.forEach(function(v,i){ctx.lineTo(i*step,h-(v/max)*h);});
+    ctx.lineTo(w,h); ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+    // line
+    ctx.beginPath();
+    sparkData.forEach(function(v,i){var x=i*step,y=h-(v/max)*h; if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});
+    ctx.strokeStyle="#22d3ee"; ctx.lineWidth=2; ctx.shadowColor="#22d3ee"; ctx.shadowBlur=8; ctx.stroke();
+    ctx.shadowBlur=0;
+  }
+  var bootTime=Date.now();
+  function startTelemetry(){
+    for(var i=0;i<40;i++) sparkData.push(30+Math.random()*30);
+    setInterval(function(){
+      telemetry.cpu=clamp(telemetry.cpu+(Math.random()*16-8),12,92);
+      telemetry.mem=clamp(telemetry.mem+(Math.random()*8-4),35,88);
+      telemetry.neural=clamp(telemetry.neural+(Math.random()*20-10),18,95);
+      // topbar
+      var tn=document.getElementById("tbNeural"), tm=document.getElementById("tbMem");
+      if(tn){tn.style.width=telemetry.neural+"%"; document.getElementById("tbNeuralV").textContent=Math.round(telemetry.neural)+"%";}
+      if(tm){tm.style.width=telemetry.mem+"%"; document.getElementById("tbMemV").textContent=Math.round(telemetry.mem)+"%";}
+      // gauges
+      setGauge("gCpu","nCpu",telemetry.cpu);
+      setGauge("gMem","nMem",telemetry.mem);
+      setGauge("gNeu","nNeu",telemetry.neural);
+      // spark
+      sparkData.push(telemetry.cpu*0.6+telemetry.neural*0.4);
+      if(sparkData.length>40) sparkData.shift();
+      drawSpark();
+      // stats
+      var up=document.getElementById("sUp");
+      if(up){var s=Math.floor((Date.now()-bootTime)/1000);
+        up.textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
+      var lat=document.getElementById("sLat"); if(lat) lat.textContent=(8+Math.round(Math.random()*10))+"ms";
+      var tp=document.getElementById("sTemp"); if(tp) tp.textContent=(38+Math.round(Math.random()*8))+"°C";
+    },1200);
+  }
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
+  /* ================= APP: NOTES ================= */
+  var notes=[
+    {id:1,title:"Welcome to AI Power OS",body:"This is your neural workspace.\n\n• Use the command bar to open apps, capture notes and queue tasks.\n• Everything here is client-side and instant.\n• Try: note: my next big idea"},
+    {id:2,title:"Command cheatsheet",body:"open chat / monitor / notes / tasks\nclose all\nnote: <text>\ntask: <text>\nstatus\nclear\nhelp"}
+  ];
+  var noteSel=1, noteSeq=3;
+  function renderNotes(body){
+    body.innerHTML='<div class="notes"><div class="notes-list" id="notesList"></div>'+
+      '<div class="notes-edit"><input id="noteTitle" placeholder="Note title…">'+
+      '<textarea id="noteBody" placeholder="Start typing…"></textarea>'+
+      '<div class="notes-tools"><button class="btn" id="noteSave">Save</button>'+
+      '<button class="btn ghost" id="noteNew">New</button>'+
+      '<button class="btn ghost" id="noteDel">Delete</button></div></div></div>';
+    paintNotes(body);
+    $("#noteSave",body).addEventListener("click",function(){saveNote(body);toast("Notes","Note saved.");});
+    $("#noteNew",body).addEventListener("click",function(){
+      var n={id:noteSeq++,title:"Untitled note",body:""};
+      notes.unshift(n); noteSel=n.id; paintNotes(body); toast("Notes","New note created.");
+    });
+    $("#noteDel",body).addEventListener("click",function(){
+      notes=notes.filter(function(n){return n.id!==noteSel;});
+      noteSel=notes.length?notes[0].id:null; paintNotes(body); toast("Notes","Note deleted.");
+    });
+  }
+  function paintNotes(body){
+    var list=$("#notesList",body); list.innerHTML="";
+    notes.forEach(function(n){
+      var it=el("div","note-item"+(n.id===noteSel?" sel":""),
+        '<div class="nt">'+esc(n.title||"Untitled")+'</div><div class="nd">'+esc((n.body||"").slice(0,34)||"empty")+'</div>');
+      it.addEventListener("click",function(){saveNote(body);noteSel=n.id;paintNotes(body);});
+      list.appendChild(it);
+    });
+    var cur=notes.filter(function(n){return n.id===noteSel;})[0];
+    $("#noteTitle",body).value=cur?cur.title:"";
+    $("#noteBody",body).value=cur?cur.body:"";
+  }
+  function saveNote(body){
+    var cur=notes.filter(function(n){return n.id===noteSel;})[0];
+    if(!cur) return;
+    cur.title=$("#noteTitle",body).value;
+    cur.body=$("#noteBody",body).value;
+    var list=$("#notesList",body);
+    if(list) paintNotes(body);
+  }
+  function addNote(text){
+    var n={id:noteSeq++,title:text.slice(0,40)||"Quick note",body:text};
+    notes.unshift(n); noteSel=n.id;
+    if(openWins.notes){ var b=openWins.notes.el.querySelector(".win-body"); if(b) paintNotes(b); }
+    toast("Note captured", text.slice(0,60));
+  }
+
+  /* ================= APP: TASKS ================= */
+  var tasks=[
+    {id:1,text:"Calibrate neural mesh",done:true},
+    {id:2,text:"Review agent swarm logs",done:false},
+    {id:3,text:"Ship AI Power OS demo",done:false}
+  ];
+  var taskSeq=4;
+  var agents=[
+    {name:"ARIA · Reasoning",state:"online"},
+    {name:"ORION · Retrieval",state:"online"},
+    {name:"VEGA · Automation",state:"idle"},
+    {name:"NOVA · Vision",state:"online"}
+  ];
+  function renderTasks(body){
+    body.innerHTML='<div class="tasks">'+
+      '<div class="task-add"><input id="taskInput" placeholder="Add a task or dispatch an agent…" autocomplete="off">'+
+      '<button class="btn" id="taskAdd">Add</button></div>'+
+      '<div class="tlist" id="tlist"></div>'+
+      '<div class="agents"><h4>Agent Swarm</h4><div id="agentList"></div></div></div>';
+    paintTasks(body);
+    function add(){
+      var inp=$("#taskInput",body); var v=inp.value.trim(); if(!v) return;
+      tasks.unshift({id:taskSeq++,text:v,done:false}); inp.value=""; paintTasks(body);
+      toast("Task queued", v.slice(0,60));
+    }
+    $("#taskAdd",body).addEventListener("click",add);
+    $("#taskInput",body).addEventListener("keydown",function(e){if(e.key==="Enter")add();});
+  }
+  function paintTasks(body){
+    var list=$("#tlist",body); list.innerHTML="";
+    tasks.forEach(function(t){
+      var row=el("div","task"+(t.done?" done":""),
+        '<div class="chk"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6"/></svg></div>'+
+        '<div class="tt">'+esc(t.text)+'</div><button class="del" title="Remove">&times;</button>');
+      row.querySelector(".chk").addEventListener("click",function(){t.done=!t.done;paintTasks(body);});
+      row.querySelector(".del").addEventListener("click",function(){
+        tasks=tasks.filter(function(x){return x.id!==t.id;});paintTasks(body);
+      });
+      list.appendChild(row);
+    });
+    var al=$("#agentList",body); al.innerHTML="";
+    agents.forEach(function(a){
+      al.appendChild(el("div","agent",
+        '<span class="ad '+(a.state==="online"?"on":"idle")+'"></span>'+
+        '<span class="an">'+esc(a.name)+'</span><span class="as">'+esc(a.state)+'</span>'));
+    });
+  }
+  function addTask(text){
+    tasks.unshift({id:taskSeq++,text:text,done:false});
+    if(openWins.tasks){ var b=openWins.tasks.el.querySelector(".win-body"); if(b) paintTasks(b); }
+    toast("Task queued", text.slice(0,60));
+  }
+
+  /* ================= COMMAND BAR ================= */
+  function runCommand(raw){
+    var text=raw.trim(); if(!text) return;
+    var s=text.toLowerCase();
+
+    if(s==="help"||s==="?"||s==="commands"){
+      toast("Command reference","open <app> · close all · note: <text> · task: <text> · status · clear · help");
+      return;
+    }
+    if(s==="status"||s==="diagnostics"||s==="health"){
+      openApp("monitor");
+      toast("Diagnostics","CPU "+Math.round(telemetry.cpu)+"% · MEM "+Math.round(telemetry.mem)+"% · NEURAL "+Math.round(telemetry.neural)+"%");
+      return;
+    }
+    if(s==="clear"||s==="clear chat"){
+      chatHistory=[]; if(openWins.chat){var b=openWins.chat.el.querySelector(".win-body"); if(b) renderChat(b);}
+      toast("Session","Chat history cleared.");
+      return;
+    }
+    if(s==="close all"||s==="close everything"){
+      closeAll(); toast("Desktop","All windows closed."); return;
+    }
+    var mClose=s.match(/^close\s+(.+)$/);
+    if(mClose){
+      var cid=matchApp(mClose[1]);
+      if(cid){closeApp(cid);toast("Desktop",APPS[cid].name+" closed.");}
+      else toast("Command","No app named \""+mClose[1]+"\".");
+      return;
+    }
+    var mNote=text.match(/^(?:note|notes|remember)\s*[:\-]?\s*(.+)$/i);
+    if(mNote){ addNote(mNote[1].trim()); return; }
+
+    var mTask=text.match(/^(?:task|todo|add task|queue)\s*[:\-]?\s*(.+)$/i);
+    if(mTask){ addTask(mTask[1].trim()); return; }
+
+    var mOpen=s.match(/^(?:open|launch|show|go to|start)\s+(.+)$/);
+    if(mOpen){
+      var oid=matchApp(mOpen[1]);
+      if(oid){openApp(oid);toast("Launching",APPS[oid].name);}
+      else toast("Command","No app named \""+mOpen[1]+"\".");
+      return;
+    }
+    // bare app name
+    var bid=matchApp(s);
+    if(bid){openApp(bid);return;}
+
+    // fallback -> chat
+    openApp("chat");
+    chatHistory.push({who:"me",text:text});
+    var b=openWins.chat.el.querySelector(".win-body");
+    if(b) renderChat(b);
+    setTimeout(function(){
+      var r=aiReply(text);
+      chatHistory.push({who:"ai",text:r});
+      var b2=openWins.chat.el.querySelector(".win-body");
+      if(b2) renderChat(b2);
+    },420);
+  }
+
+  function matchApp(str){
+    var s=str.toLowerCase().trim();
+    if(/chat|assistant|aria|ai/.test(s)) return "chat";
+    if(/monitor|system|performance|gauge|diagnostic/.test(s)) return "monitor";
+    if(/note|file|doc/.test(s)) return "notes";
+    if(/task|agent|todo|swarm/.test(s)) return "tasks";
+    return null;
+  }
+
+  var cmdInput=$("#cmdInput");
+  cmdInput.addEventListener("keydown",function(e){
+    if(e.key==="Enter"){
+      var v=cmdInput.value; cmdInput.value="";
+      runCommand(v);
+    }
+  });
+  // Ctrl/Cmd+K focuses command bar
+  document.addEventListener("keydown",function(e){
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){
+      e.preventDefault(); cmdInput.focus(); cmdInput.select();
+    }
+  });
+
+  /* ---------- go ---------- */
+  runBoot();
+})();
+</script>
+</body>
+</html>
